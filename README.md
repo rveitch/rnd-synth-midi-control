@@ -1,5 +1,7 @@
 # RND Synth MIDI Control
 
+<img width="1293" height="1235" alt="image" src="https://github.com/user-attachments/assets/ab83941d-4864-44e2-9554-90fe4f95e77c" />
+
 Browser-based MIDI control and patch inspection for the [Cyma Forma RND Synth](https://www.cymaforma.com/rnd-synth).
 
 The current scaffold connects through Web MIDI, receives patch SysEx after a button press, and displays the decoded seed, probable tonic and scale, active tracks, engine names, unknown values, and raw messages.
