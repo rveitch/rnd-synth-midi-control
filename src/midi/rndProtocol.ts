@@ -123,3 +123,9 @@ export function getScaleName(index: number): string {
 export function getNoteName(index: number): string {
   return NOTE_NAMES[index] ?? `Unknown (${index})`;
 }
+
+export function getPlaybackMode(value: number): string {
+  if (value === 1) return 'Auto sequence';
+  if (value === 2) return 'Preview only';
+  return `Unknown mode (${value})`;
+}

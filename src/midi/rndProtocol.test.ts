@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeSevenBitLittleEndian, encodeSeedSysEx, parseRndSysEx } from './rndProtocol';
+import { decodeSevenBitLittleEndian, encodeSeedSysEx, getPlaybackMode, parseRndSysEx } from './rndProtocol';
 
 describe('RND Synth SysEx protocol', () => {
   it('decodes the five-byte little-endian seed', () => {
@@ -43,5 +43,11 @@ describe('RND Synth SysEx protocol', () => {
 
   it('rejects unrelated SysEx', () => {
     expect(parseRndSysEx([0xf0, 0x7d, 1, 0xf7])).toMatchObject({ kind: 'invalid' });
+  });
+
+  it('labels the observed playback modes while preserving unknown values', () => {
+    expect(getPlaybackMode(1)).toBe('Auto sequence');
+    expect(getPlaybackMode(2)).toBe('Preview only');
+    expect(getPlaybackMode(0)).toBe('Unknown mode (0)');
   });
 });

@@ -42,3 +42,5 @@ F0 6F 62 78 <message type> <payload> F7
 Seed recall sends only the `10` message. Global and track metadata are never replayed.
 
 The last two global bytes are provisionally shown as tonic and scale index until controlled captures confirm them.
+
+The first global byte is provisionally decoded from labeled captures as playback mode: `1` automatically runs the generated sequence, `2` plays only the initial preview, and `0` remains unknown.

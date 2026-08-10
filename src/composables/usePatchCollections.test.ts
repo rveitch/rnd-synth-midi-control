@@ -42,6 +42,17 @@ describe('patch collections', () => {
     ]);
   });
 
+  it('removes only the history copy of a library patch', () => {
+    const collections = usePatchCollections();
+    const patch = createPatch(84);
+    collections.savePatch(patch);
+    collections.addToLibrary(patch, 'Keep this one');
+    collections.removeFromHistory(patch.seed);
+
+    expect(collections.patchHistory.value).toEqual([]);
+    expect(collections.patchLibrary.value[0]?.patch.seed).toBe(84);
+  });
+
   it('caps history without evicting a library copy', () => {
     const collections = usePatchCollections();
     const firstPatch = createPatch(1);

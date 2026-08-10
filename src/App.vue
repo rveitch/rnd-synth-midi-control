@@ -4,7 +4,7 @@ import PatchHistory from './components/PatchHistory.vue';
 import PatchLibrary from './components/PatchLibrary.vue';
 import type { LibraryPatch } from './composables/usePatchCollections';
 import { useMidi } from './composables/useMidi';
-import { formatHex, getNoteName, getScaleName } from './midi/rndProtocol';
+import { getNoteName, getPlaybackMode, getScaleName } from './midi/rndProtocol';
 
 const midi = useMidi();
 const collectionMessage = ref('');
@@ -27,6 +27,14 @@ function exportPatch(): void {
 
 function clearPatchHistory(): void {
   if (window.confirm('Clear all locally saved patch history?')) midi.clearHistory();
+}
+
+function removeHistoryPatch(patch: Parameters<typeof midi.recallPatch>[0]): void {
+  const detail = librarySeeds.value.includes(patch.seed) ? ' Its library copy will remain saved.' : '';
+  if (window.confirm(`Remove patch ${patch.seed.toLocaleString()} from history?${detail}`)) {
+    midi.removeFromHistory(patch.seed);
+    collectionMessage.value = 'Patch removed from history.';
+  }
 }
 
 function addToLibrary(patch: Parameters<typeof midi.addToLibrary>[0], name: string): void {
@@ -203,6 +211,7 @@ function dateStamp(): string {
             @export="exportHistory"
             @import="importHistory"
             @recall="midi.recallPatch"
+            @remove="removeHistoryPatch"
           />
         </div>
 
@@ -238,7 +247,7 @@ function dateStamp(): string {
             >
               <article><span>Probable tonic</span><strong>{{ getNoteName(midi.latestPatch.value.global.tonicIndex) }}</strong><small>Raw {{ midi.latestPatch.value.global.tonicIndex }}</small></article>
               <article><span>Probable scale</span><strong>{{ getScaleName(midi.latestPatch.value.global.scaleIndex) }}</strong><small>Raw {{ midi.latestPatch.value.global.scaleIndex }}</small></article>
-              <article><span>Unknown globals</span><strong>{{ midi.latestPatch.value.global.valueA }} · {{ midi.latestPatch.value.global.valueB }} · {{ midi.latestPatch.value.global.valueC }}</strong><small>{{ formatHex(midi.latestPatch.value.global.raw) }}</small></article>
+              <article><span>Playback mode</span><strong>{{ getPlaybackMode(midi.latestPatch.value.global.valueA) }}</strong><small>Mode {{ midi.latestPatch.value.global.valueA }} · Unknown {{ midi.latestPatch.value.global.valueB }} · {{ midi.latestPatch.value.global.valueC }}</small></article>
             </div>
             <div class="tracks">
               <article

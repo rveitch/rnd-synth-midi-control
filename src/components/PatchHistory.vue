@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { formatHex, getNoteName, getScaleName, type RndPatch } from '../midi/rndProtocol';
+import { formatHex, getNoteName, getPlaybackMode, getScaleName, type RndPatch } from '../midi/rndProtocol';
 
 defineProps<{
   canRecall: boolean;
@@ -15,6 +15,7 @@ const emit = defineEmits<{
   export: [];
   import: [file: File];
   recall: [patch: RndPatch];
+  remove: [patch: RndPatch];
 }>();
 
 const draftNames = reactive<Record<string, string>>({});
@@ -93,7 +94,8 @@ function handleImport(event: Event): void {
           <dl v-if="patch.global">
             <div><dt>Tonic</dt><dd>{{ getNoteName(patch.global.tonicIndex) }}</dd></div>
             <div><dt>Scale</dt><dd>{{ getScaleName(patch.global.scaleIndex) }}</dd></div>
-            <div><dt>Globals</dt><dd>{{ formatHex(patch.global.raw) }}</dd></div>
+            <div><dt>Playback</dt><dd>{{ getPlaybackMode(patch.global.valueA) }}</dd></div>
+            <div><dt>Raw globals</dt><dd>{{ formatHex(patch.global.raw) }}</dd></div>
           </dl>
           <ol class="history-tracks">
             <li
@@ -130,6 +132,13 @@ function handleImport(event: Event): void {
               {{ librarySeeds.includes(patch.seed) ? 'Update library' : 'Add to library' }}
             </button>
           </div>
+          <button
+            class="history-remove"
+            type="button"
+            @click="$emit('remove', patch)"
+          >
+            Remove from history
+          </button>
           <p
             v-if="!canRecall"
             class="recall-hint"

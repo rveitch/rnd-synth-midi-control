@@ -134,6 +134,11 @@ export function usePatchCollections() {
     persistHistory();
   }
 
+  function removeFromHistory(seed: number): void {
+    patchHistory.value = patchHistory.value.filter((patch) => patch.seed !== seed);
+    persistHistory();
+  }
+
   function exportHistory(): string {
     const document: HistoryExport = {
       exportedAt: new Date().toISOString(),
@@ -207,6 +212,7 @@ export function usePatchCollections() {
     importLibrary,
     patchHistory,
     patchLibrary,
+    removeFromHistory,
     removeFromLibrary,
     renameLibraryPatch,
     savePatch,

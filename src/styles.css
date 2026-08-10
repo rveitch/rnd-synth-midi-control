@@ -289,3 +289,16 @@
 .library-remove {
   color: #ff927d;
 }
+
+.history-remove {
+  width: 100%;
+  margin-top: 12px;
+  padding: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 10px;
+}
+
+.history-remove:hover {
+  color: #ff927d;
+}
