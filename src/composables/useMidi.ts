@@ -1,6 +1,7 @@
 import { onBeforeUnmount, ref } from 'vue';
 import { MidiController, type MidiPortOption } from '../midi/midiController';
 import { formatHex, type RndPatch, type RndProtocolMessage } from '../midi/rndProtocol';
+import { usePatchCollections } from './usePatchCollections';
 
 export interface DiagnosticEntry {
   hex: string;
@@ -17,9 +18,12 @@ export function useMidi() {
   const inputs = ref<MidiPortOption[]>([]);
   const latestPatch = ref<RndPatch | null>(null);
   const outputs = ref<MidiPortOption[]>([]);
+  const recallingSeed = ref<number | null>(null);
   const selectedInputId = ref('');
   const selectedOutputId = ref('');
   let diagnosticId = 0;
+  let recallResetTimer: ReturnType<typeof setTimeout> | null = null;
+  const collections = usePatchCollections();
 
   const controller = new MidiController({
     onAccessChange: refreshPorts,
@@ -30,7 +34,12 @@ export function useMidi() {
         receivedAt: new Date().toLocaleTimeString(),
       }, ...diagnostics.value].slice(0, 100);
     },
-    onPatch(patch) { latestPatch.value = patch; },
+    onPatchComplete(patch) {
+      latestPatch.value = patch;
+      collections.savePatch(patch);
+      if (recallingSeed.value === patch.seed) clearRecallState();
+    },
+    onPatchUpdate(patch) { latestPatch.value = patch; },
   });
 
   async function connect(): Promise<void> {
@@ -41,6 +50,7 @@ export function useMidi() {
   }
 
   async function disconnect(): Promise<void> {
+    clearRecallState();
     await controller.disconnect(); connected.value = false; inputs.value = []; outputs.value = [];
     selectedInputId.value = ''; selectedOutputId.value = '';
   }
@@ -48,16 +58,38 @@ export function useMidi() {
   async function selectInput(id: string): Promise<void> { await controller.selectInput(id); refreshPorts(); }
   async function selectOutput(id: string): Promise<void> { await controller.selectOutput(id); refreshPorts(); }
 
+  function recallPatch(patch: RndPatch): void {
+    error.value = '';
+    try {
+      recallingSeed.value = patch.seed;
+      controller.recallSeed(patch.seed);
+      recallResetTimer = setTimeout(clearRecallState, 2_000);
+    } catch (cause) {
+      recallingSeed.value = null;
+      error.value = cause instanceof Error ? cause.message : 'Unable to recall the selected patch.';
+    }
+  }
+
   function refreshPorts(): void {
     inputs.value = controller.getInputs(); outputs.value = controller.getOutputs();
     selectedInputId.value = controller.getSelectedInputId(); selectedOutputId.value = controller.getSelectedOutputId();
   }
 
   function clearDiagnostics(): void { diagnostics.value = []; }
-  onBeforeUnmount(() => { void controller.disconnect(); });
+
+  function clearRecallState(): void {
+    recallingSeed.value = null;
+    if (recallResetTimer !== null) {
+      clearTimeout(recallResetTimer);
+      recallResetTimer = null;
+    }
+  }
+
+  onBeforeUnmount(() => { clearRecallState(); void controller.disconnect(); });
 
   return {
-    clearDiagnostics, connect, connected, connecting, diagnostics, disconnect, error, inputs,
-    latestPatch, outputs, selectedInputId, selectedOutputId, selectInput, selectOutput,
+    ...collections,
+    clearDiagnostics, connect, connected, connecting, diagnostics, disconnect, error, inputs, latestPatch,
+    outputs, recallPatch, recallingSeed, selectedInputId, selectedOutputId, selectInput, selectOutput,
   };
 }

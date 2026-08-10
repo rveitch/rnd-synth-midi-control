@@ -1,5 +1,5 @@
 import { RndPatchAssembler } from './patchAssembler';
-import { parseRndSysEx, type RndPatch, type RndProtocolMessage } from './rndProtocol';
+import { encodeSeedSysEx, parseRndSysEx, type RndPatch, type RndProtocolMessage } from './rndProtocol';
 
 const PREFERRED_DEVICE_NAME = 'rnd synth';
 const PATCH_SETTLE_TIME_MS = 100;
@@ -13,7 +13,8 @@ export interface MidiPortOption {
 export interface MidiControllerCallbacks {
   onAccessChange(): void;
   onMessage(message: RndProtocolMessage): void;
-  onPatch(patch: RndPatch): void;
+  onPatchComplete(patch: RndPatch): void;
+  onPatchUpdate(patch: RndPatch): void;
 }
 
 export class MidiController {
@@ -42,6 +43,14 @@ export class MidiController {
   getSelectedInputId(): string { return this.input?.id ?? ''; }
   getSelectedOutputId(): string { return this.output?.id ?? ''; }
 
+  recallSeed(seed: number): void {
+    if (this.output === null || this.output.state !== 'connected') {
+      throw new Error('Select a connected MIDI output before recalling a patch.');
+    }
+
+    this.output.send(encodeSeedSysEx(seed));
+  }
+
   async selectInput(id: string): Promise<void> {
     if (this.input !== null) { this.input.onmidimessage = null; await this.input.close(); }
     this.input = this.access?.inputs.get(id) ?? null;
@@ -56,6 +65,7 @@ export class MidiController {
 
   async disconnect(): Promise<void> {
     this.clearTimer();
+    this.assembler.complete();
     if (this.input !== null) { this.input.onmidimessage = null; await this.input.close(); }
     if (this.output !== null) await this.output.close();
     if (this.access !== null) this.access.onstatechange = null;
@@ -68,13 +78,13 @@ export class MidiController {
     const message = parseRndSysEx(data);
     this.callbacks.onMessage(message);
     const completed = this.assembler.push(message);
-    if (completed !== null) this.callbacks.onPatch(completed);
+    if (completed !== null) this.callbacks.onPatchComplete(completed);
     const snapshot = this.assembler.snapshot();
-    if (snapshot !== null) this.callbacks.onPatch(snapshot);
+    if (snapshot !== null) this.callbacks.onPatchUpdate(snapshot);
     this.clearTimer();
     this.settleTimer = setTimeout(() => {
       const patch = this.assembler.complete();
-      if (patch !== null) this.callbacks.onPatch(patch);
+      if (patch !== null) this.callbacks.onPatchComplete(patch);
     }, PATCH_SETTLE_TIME_MS);
   }
 

@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import PatchHistory from './components/PatchHistory.vue';
+import PatchLibrary from './components/PatchLibrary.vue';
+import type { LibraryPatch } from './composables/usePatchCollections';
 import { useMidi } from './composables/useMidi';
 import { formatHex, getNoteName, getScaleName } from './midi/rndProtocol';
 
 const midi = useMidi();
+const collectionMessage = ref('');
 const inactiveTracks = computed(() => {
   const active = new Set(midi.latestPatch.value?.tracks.map((track) => track.index) ?? []);
   return [0, 1, 2, 3].filter((index) => !active.has(index));
 });
+const librarySeeds = computed(() => midi.patchLibrary.value.map((entry) => entry.patch.seed));
 
 function handleInput(event: Event): void { void midi.selectInput((event.target as HTMLSelectElement).value); }
 function handleOutput(event: Event): void { void midi.selectOutput((event.target as HTMLSelectElement).value); }
@@ -19,6 +24,73 @@ function exportPatch(): void {
   const anchor = document.createElement('a');
   anchor.href = url; anchor.download = `rnd-patch-${patch.seed}.json`; anchor.click(); URL.revokeObjectURL(url);
 }
+
+function clearPatchHistory(): void {
+  if (window.confirm('Clear all locally saved patch history?')) midi.clearHistory();
+}
+
+function addToLibrary(patch: Parameters<typeof midi.addToLibrary>[0], name: string): void {
+  midi.addToLibrary(patch, name);
+  collectionMessage.value = 'Patch added to the library.';
+}
+
+function recallLibraryPatch(entry: LibraryPatch): void {
+  midi.recallPatch(entry.patch);
+}
+
+function renameLibraryPatch(entry: LibraryPatch, name: string): void {
+  try {
+    midi.renameLibraryPatch(entry.patch.seed, name);
+    collectionMessage.value = 'Patch name updated.';
+  } catch (cause) {
+    collectionMessage.value = cause instanceof Error ? cause.message : 'Unable to rename this patch.';
+  }
+}
+
+function removeLibraryPatch(entry: LibraryPatch): void {
+  if (window.confirm(`Remove “${entry.name}” from the library?`)) {
+    midi.removeFromLibrary(entry.patch.seed);
+    collectionMessage.value = 'Patch removed from the library.';
+  }
+}
+
+function exportHistory(): void {
+  downloadJson(midi.exportHistory(), `rnd-patch-history-${dateStamp()}.json`);
+}
+
+function exportLibrary(): void {
+  downloadJson(midi.exportLibrary(), `rnd-patch-library-${dateStamp()}.json`);
+}
+
+async function importHistory(file: File): Promise<void> {
+  await importCollection(file, midi.importHistory, 'history');
+}
+
+async function importLibrary(file: File): Promise<void> {
+  await importCollection(file, midi.importLibrary, 'library');
+}
+
+async function importCollection(file: File, importer: (serialized: string) => number, label: string): Promise<void> {
+  try {
+    const count = importer(await file.text());
+    collectionMessage.value = `Imported ${count} ${label} ${count === 1 ? 'entry' : 'entries'}.`;
+  } catch (cause) {
+    collectionMessage.value = cause instanceof Error ? cause.message : `Unable to import the ${label}.`;
+  }
+}
+
+function downloadJson(serialized: string, filename: string): void {
+  const url = URL.createObjectURL(new Blob([serialized], { type: 'application/json' }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function dateStamp(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 </script>
 
 <template>
@@ -28,7 +100,7 @@ function exportPatch(): void {
         <span>RND</span> MIDI Control
       </div>
       <div class="safe">
-        Receive-only SysEx
+        Verified seed recall
       </div>
     </header>
 
@@ -42,64 +114,97 @@ function exportPatch(): void {
       </section>
 
       <div class="workspace">
-        <section class="panel connection">
-          <div class="heading">
-            <div>
-              <p class="eyebrow">
-                Hardware
-              </p><h2>MIDI connection</h2>
+        <div class="history-column">
+          <section class="panel connection">
+            <div class="heading">
+              <div>
+                <p class="eyebrow">
+                  Hardware
+                </p><h2>MIDI connection</h2>
+              </div>
+              <span
+                class="status"
+                :class="{ online: midi.connected.value }"
+              >● {{ midi.connected.value ? 'Connected' : 'Disconnected' }}</span>
             </div>
-            <span
-              class="status"
-              :class="{ online: midi.connected.value }"
-            >● {{ midi.connected.value ? 'Connected' : 'Disconnected' }}</span>
-          </div>
-          <p class="muted">
-            MIDI and SysEx permission is required to read the patch metadata announced by the synth.
-          </p>
-          <button
-            v-if="!midi.connected.value"
-            class="primary"
-            :disabled="midi.connecting.value"
-            @click="midi.connect"
-          >
-            {{ midi.connecting.value ? 'Waiting for permission…' : 'Connect RND Synth' }}
-          </button>
-          <button
-            v-else
-            class="secondary"
-            @click="midi.disconnect"
-          >
-            Disconnect
-          </button>
+            <p class="muted">
+              MIDI and SysEx permission is required to read the patch metadata announced by the synth.
+            </p>
+            <button
+              v-if="!midi.connected.value"
+              class="primary"
+              :disabled="midi.connecting.value"
+              @click="midi.connect"
+            >
+              {{ midi.connecting.value ? 'Waiting for permission…' : 'Connect RND Synth' }}
+            </button>
+            <button
+              v-else
+              class="secondary"
+              @click="midi.disconnect"
+            >
+              Disconnect
+            </button>
+            <p
+              v-if="midi.error.value"
+              class="error"
+            >
+              {{ midi.error.value }}
+            </p>
+            <div
+              v-if="midi.connected.value"
+              class="ports"
+            >
+              <label>MIDI input<select
+                :value="midi.selectedInputId.value"
+                @change="handleInput"
+              ><option value="">Select input</option><option
+                v-for="port in midi.inputs.value"
+                :key="port.id"
+                :value="port.id"
+              >{{ port.name }} · {{ port.state }}</option></select></label>
+              <label>MIDI output<select
+                :value="midi.selectedOutputId.value"
+                @change="handleOutput"
+              ><option value="">Select output</option><option
+                v-for="port in midi.outputs.value"
+                :key="port.id"
+                :value="port.id"
+              >{{ port.name }} · {{ port.state }}</option></select></label>
+            </div>
+          </section>
+
           <p
-            v-if="midi.error.value"
-            class="error"
+            v-if="collectionMessage"
+            class="collection-message"
+            role="status"
           >
-            {{ midi.error.value }}
+            {{ collectionMessage }}
           </p>
-          <div
-            v-if="midi.connected.value"
-            class="ports"
-          >
-            <label>MIDI input<select
-              :value="midi.selectedInputId.value"
-              @change="handleInput"
-            ><option value="">Select input</option><option
-              v-for="port in midi.inputs.value"
-              :key="port.id"
-              :value="port.id"
-            >{{ port.name }} · {{ port.state }}</option></select></label>
-            <label>MIDI output<select
-              :value="midi.selectedOutputId.value"
-              @change="handleOutput"
-            ><option value="">Select output</option><option
-              v-for="port in midi.outputs.value"
-              :key="port.id"
-              :value="port.id"
-            >{{ port.name }} · {{ port.state }}</option></select></label>
-          </div>
-        </section>
+
+          <PatchLibrary
+            :can-recall="midi.connected.value && midi.selectedOutputId.value !== ''"
+            :entries="midi.patchLibrary.value"
+            :recalling-seed="midi.recallingSeed.value"
+            @export="exportLibrary"
+            @import="importLibrary"
+            @recall="recallLibraryPatch"
+            @remove="removeLibraryPatch"
+            @rename="renameLibraryPatch"
+          />
+
+          <PatchHistory
+            :can-recall="midi.connected.value && midi.selectedOutputId.value !== ''"
+            :library-seeds="librarySeeds"
+            :patches="midi.patchHistory.value"
+            :recalling-seed="midi.recallingSeed.value"
+            @add-to-library="addToLibrary"
+            @clear="clearPatchHistory"
+            @export="exportHistory"
+            @import="importHistory"
+            @recall="midi.recallPatch"
+          />
+        </div>
 
         <section class="panel inspector">
           <div class="heading">

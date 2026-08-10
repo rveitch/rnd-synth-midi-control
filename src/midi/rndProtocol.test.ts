@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { decodeSevenBitLittleEndian, parseRndSysEx } from './rndProtocol';
+import { decodeSevenBitLittleEndian, encodeSeedSysEx, parseRndSysEx } from './rndProtocol';
 
 describe('RND Synth SysEx protocol', () => {
   it('decodes the five-byte little-endian seed', () => {
     expect(decodeSevenBitLittleEndian([0x67, 0x72, 0x43, 0x12, 0x0b])).toBe(2_991_651_175);
+  });
+
+  it('encodes a seed as the confirmed recall message', () => {
+    expect(encodeSeedSysEx(2_592_449_932)).toEqual([
+      0xf0, 0x6f, 0x62, 0x78, 0x10, 0x0c, 0x4b, 0x16, 0x54, 0x09, 0xf7,
+    ]);
+  });
+
+  it('rejects seeds outside the unsigned 32-bit range', () => {
+    expect(() => encodeSeedSysEx(0x1_0000_0000)).toThrow(RangeError);
   });
 
   it('parses a captured seed message', () => {

@@ -49,6 +49,21 @@ export function decodeSevenBitLittleEndian(bytes: number[]): number {
   return bytes.reduce((value, byte, index) => value + byte * 128 ** index, 0);
 }
 
+export function encodeSeedSysEx(seed: number): number[] {
+  if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff) {
+    throw new RangeError('RND Synth seed must be an unsigned 32-bit integer.');
+  }
+
+  const payload: number[] = [];
+  let remaining = seed;
+  for (let index = 0; index < 5; index += 1) {
+    payload.push(remaining % 128);
+    remaining = Math.floor(remaining / 128);
+  }
+
+  return [0xf0, 0x6f, 0x62, 0x78, 0x10, ...payload, 0xf7];
+}
+
 function decodeAscii(bytes: number[]): string {
   const terminatorIndex = bytes.indexOf(0);
   return String.fromCharCode(...(terminatorIndex >= 0 ? bytes.slice(0, terminatorIndex) : bytes));
