@@ -44,3 +44,59 @@ Seed recall sends only the `10` message. Global and track metadata are never rep
 The last two global bytes are provisionally shown as tonic and scale index until controlled captures confirm them.
 
 The first global byte is provisionally decoded from labeled captures as playback mode: `1` automatically runs the generated sequence, `2` plays only the initial preview, and `0` remains unknown.
+
+The **Generate patch** control creates a uniformly random unsigned 32-bit seed with the browser's secure random generator and sends the confirmed seed-recall message. The synth's response follows the normal inspection, history, and library workflow.
+
+## Seed scanner
+
+The bounded command-line scanner sends seeds through CoreMIDI, verifies the seed echoed by the synth, assembles the returned patch metadata, and appends one durable JSONL record per request. It never sends undocumented messages other than the confirmed seed command.
+
+Set up its isolated Python environment once:
+
+```sh
+python3 -m venv .scanner-venv
+.scanner-venv/bin/pip install -r requirements-scanner.txt
+```
+
+List ports without sending data:
+
+```sh
+npm run scan:seeds -- --list
+```
+
+Run bounded sequential and random samples:
+
+```sh
+npm run scan:seeds -- --mode sequential --start-seed 0 --count 500
+npm run scan:seeds -- --mode random --count 500
+```
+
+Run a designed cohort from a text file containing one decimal or `0x`-prefixed seed per line:
+
+```sh
+npm run scan:seeds -- --seeds-file scans/my-seeds.txt --output scans/my-results.jsonl
+```
+
+Results default to timestamped files under `scans/`, which is ignored by Git. Use `--output <path>` to choose a different JSONL file. The scanner defaults to a 500 ms interval, rejects intervals below 100 ms, times out individual requests, flushes every record immediately, and closes both ports on completion or interruption. Mute or turn down the synth before large runs because every candidate patch may be audible.
+
+Run the scanner protocol tests with:
+
+```sh
+npm run test:scanner
+```
+
+Run the bounded transport probe against a known automatically running patch:
+
+```sh
+npm run probe:transport -- --seed 4007357591
+```
+
+The probe measures emitted note traffic before and after MIDI Stop, Continue, and Start, writes a JSON event log under `scans/`, restores the sequence with Start, and exits automatically.
+
+Run repeated behavioral captures for the strongest exact metadata contrasts:
+
+```sh
+npm run probe:contrasts
+```
+
+The contrast probe alternates A/B recalls, captures eight seconds of MIDI per seed, flushes each trial to `scans/contrast-probe.json`, and exits after the bounded set completes.

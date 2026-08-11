@@ -302,3 +302,30 @@
 .history-remove:hover {
   color: #ff927d;
 }
+
+.inspector-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.generate-button {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 99px;
+  color: #151512;
+  background: var(--acid);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .inspector > .heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inspector-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -59,10 +59,32 @@ export function useMidi() {
   async function selectOutput(id: string): Promise<void> { await controller.selectOutput(id); refreshPorts(); }
 
   function recallPatch(patch: RndPatch): void {
+    sendSeed(patch.seed);
+  }
+
+  function generatePatch(): void {
+    if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') {
+      error.value = 'This browser cannot generate a secure random patch seed.';
+      return;
+    }
+
+    const values = new Uint32Array(1);
+    crypto.getRandomValues(values);
+    const seed = values[0];
+    if (seed === undefined) {
+      error.value = 'Unable to generate a random patch seed.';
+      return;
+    }
+
+    sendSeed(seed);
+  }
+
+  function sendSeed(seed: number): void {
     error.value = '';
+    clearRecallState();
     try {
-      recallingSeed.value = patch.seed;
-      controller.recallSeed(patch.seed);
+      recallingSeed.value = seed;
+      controller.recallSeed(seed);
       recallResetTimer = setTimeout(clearRecallState, 2_000);
     } catch (cause) {
       recallingSeed.value = null;
@@ -89,7 +111,7 @@ export function useMidi() {
 
   return {
     ...collections,
-    clearDiagnostics, connect, connected, connecting, diagnostics, disconnect, error, inputs, latestPatch,
-    outputs, recallPatch, recallingSeed, selectedInputId, selectedOutputId, selectInput, selectOutput,
+    clearDiagnostics, connect, connected, connecting, diagnostics, disconnect, error, generatePatch, inputs,
+    latestPatch, outputs, recallPatch, recallingSeed, selectedInputId, selectedOutputId, selectInput, selectOutput,
   };
 }

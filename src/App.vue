@@ -221,13 +221,22 @@ function dateStamp(): string {
               <p class="eyebrow">
                 Latest idea
               </p><h2>Patch inspector</h2>
-            </div><button
-              class="secondary"
-              :disabled="midi.latestPatch.value === null"
-              @click="exportPatch"
-            >
-              Export JSON
-            </button>
+            </div><div class="inspector-actions">
+              <button
+                class="generate-button"
+                :disabled="!midi.connected.value || midi.selectedOutputId.value === '' || midi.recallingSeed.value !== null"
+                @click="midi.generatePatch"
+              >
+                Generate patch
+              </button>
+              <button
+                class="secondary"
+                :disabled="midi.latestPatch.value === null"
+                @click="exportPatch"
+              >
+                Export JSON
+              </button>
+            </div>
           </div>
           <div
             v-if="midi.latestPatch.value === null"

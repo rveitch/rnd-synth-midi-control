@@ -142,3 +142,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 .idea/
+.scanner-venv/
+scans/
+__pycache__/
+*.py[cod]
