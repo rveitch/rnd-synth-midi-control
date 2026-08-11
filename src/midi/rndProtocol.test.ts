@@ -21,7 +21,7 @@ describe('RND Synth SysEx protocol', () => {
       .toMatchObject({ kind: 'seed', seed: 3_691_871_364 });
   });
 
-  it('keeps unknown global fields alongside probable tonic and scale', () => {
+  it('keeps unknown global fields alongside tonic and scale', () => {
     expect(parseRndSysEx([0xf0, 0x6f, 0x62, 0x78, 0x21, 0x00, 0x56, 0x00, 0x01, 0x05, 0xf7]))
       .toMatchObject({
         kind: 'global',
@@ -45,9 +45,10 @@ describe('RND Synth SysEx protocol', () => {
     expect(parseRndSysEx([0xf0, 0x7d, 1, 0xf7])).toMatchObject({ kind: 'invalid' });
   });
 
-  it('labels the observed playback modes while preserving unknown values', () => {
-    expect(getPlaybackMode(1)).toBe('Auto sequence');
+  it('labels the observed sequence behaviors while preserving unknown values', () => {
+    expect(getPlaybackMode(0)).toBe('Running sequence · Mode 0');
+    expect(getPlaybackMode(1)).toBe('Running sequence · Mode 1');
     expect(getPlaybackMode(2)).toBe('Preview only');
-    expect(getPlaybackMode(0)).toBe('Unknown mode (0)');
+    expect(getPlaybackMode(3)).toBe('Unknown mode (3)');
   });
 });

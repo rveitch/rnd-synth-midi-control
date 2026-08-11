@@ -254,9 +254,9 @@ function dateStamp(): string {
               v-if="midi.latestPatch.value.global"
               class="globals"
             >
-              <article><span>Probable tonic</span><strong>{{ getNoteName(midi.latestPatch.value.global.tonicIndex) }}</strong><small>Raw {{ midi.latestPatch.value.global.tonicIndex }}</small></article>
-              <article><span>Probable scale</span><strong>{{ getScaleName(midi.latestPatch.value.global.scaleIndex) }}</strong><small>Raw {{ midi.latestPatch.value.global.scaleIndex }}</small></article>
-              <article><span>Playback mode</span><strong>{{ getPlaybackMode(midi.latestPatch.value.global.valueA) }}</strong><small>Mode {{ midi.latestPatch.value.global.valueA }} · Unknown {{ midi.latestPatch.value.global.valueB }} · {{ midi.latestPatch.value.global.valueC }}</small></article>
+              <article><span>Tonic</span><strong>{{ getNoteName(midi.latestPatch.value.global.tonicIndex) }}</strong><small>Raw {{ midi.latestPatch.value.global.tonicIndex }}</small></article>
+              <article><span>Scale</span><strong>{{ getScaleName(midi.latestPatch.value.global.scaleIndex) }}</strong><small>Raw {{ midi.latestPatch.value.global.scaleIndex }}</small></article>
+              <article><span>Sequence behavior</span><strong>{{ getPlaybackMode(midi.latestPatch.value.global.valueA) }}</strong><small>Mode {{ midi.latestPatch.value.global.valueA }} · Unknown {{ midi.latestPatch.value.global.valueB }} · {{ midi.latestPatch.value.global.valueC }}</small></article>
             </div>
             <div class="tracks">
               <article

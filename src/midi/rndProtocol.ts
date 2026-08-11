@@ -125,7 +125,8 @@ export function getNoteName(index: number): string {
 }
 
 export function getPlaybackMode(value: number): string {
-  if (value === 1) return 'Auto sequence';
+  if (value === 0) return 'Running sequence · Mode 0';
+  if (value === 1) return 'Running sequence · Mode 1';
   if (value === 2) return 'Preview only';
   return `Unknown mode (${value})`;
 }

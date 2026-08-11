@@ -4,7 +4,7 @@
 
 Browser-based MIDI control and patch inspection for the [Cyma Forma RND Synth](https://www.cymaforma.com/rnd-synth).
 
-The app connects through Web MIDI, receives patch SysEx after a button press, and displays the decoded seed, probable tonic and scale, active tracks, engine names, unknown values, and raw messages. Completed patches are stored locally in a deduplicated 100-entry history and can be recalled by seed.
+The app connects through Web MIDI, receives patch SysEx after a button press, and displays the decoded seed, tonic and scale, sequence behavior, active tracks, engine names, unknown values, and raw messages. Completed patches are stored locally in a deduplicated 100-entry history and can be recalled by seed.
 
 Patches can be named and copied into a separate durable library that is not affected by history eviction or clearing. History and library collections have separate, versioned JSON import/export formats so their data can support a dedicated library view in a future release.
 
@@ -41,9 +41,9 @@ F0 6F 62 78 <message type> <payload> F7
 
 Seed recall sends only the `10` message. Global and track metadata are never replayed.
 
-The last two global bytes are provisionally shown as tonic and scale index until controlled captures confirm them.
+Controlled MIDI captures support decoding the last two global bytes as tonic and scale index: observed pitches across three exact metadata contrasts fit their announced tonic and named scale.
 
-The first global byte is provisionally decoded from labeled captures as playback mode: `1` automatically runs the generated sequence, `2` plays only the initial preview, and `0` remains unknown.
+The first global byte is decoded as sequence behavior: modes `0` and `1` both produce running sequences, while labeled mode `2` patches play only the initial preview. The specific musical distinction between running modes `0` and `1` remains unknown.
 
 The **Generate patch** control creates a uniformly random unsigned 32-bit seed with the browser's secure random generator and sends the confirmed seed-recall message. The synth's response follows the normal inspection, history, and library workflow.
 

@@ -95,7 +95,7 @@ function handleImport(event: Event): void {
             <div><dt>Seed</dt><dd>{{ entry.patch.seed.toLocaleString() }}</dd></div>
             <div><dt>Tonic</dt><dd>{{ getNoteName(entry.patch.global.tonicIndex) }}</dd></div>
             <div><dt>Scale</dt><dd>{{ getScaleName(entry.patch.global.scaleIndex) }}</dd></div>
-            <div><dt>Playback</dt><dd>{{ getPlaybackMode(entry.patch.global.valueA) }}</dd></div>
+            <div><dt>Sequence behavior</dt><dd>{{ getPlaybackMode(entry.patch.global.valueA) }}</dd></div>
             <div><dt>Raw globals</dt><dd>{{ formatHex(entry.patch.global.raw) }}</dd></div>
           </dl>
           <ol class="history-tracks">

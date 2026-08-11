@@ -94,7 +94,7 @@ function handleImport(event: Event): void {
           <dl v-if="patch.global">
             <div><dt>Tonic</dt><dd>{{ getNoteName(patch.global.tonicIndex) }}</dd></div>
             <div><dt>Scale</dt><dd>{{ getScaleName(patch.global.scaleIndex) }}</dd></div>
-            <div><dt>Playback</dt><dd>{{ getPlaybackMode(patch.global.valueA) }}</dd></div>
+            <div><dt>Sequence behavior</dt><dd>{{ getPlaybackMode(patch.global.valueA) }}</dd></div>
             <div><dt>Raw globals</dt><dd>{{ formatHex(patch.global.raw) }}</dd></div>
           </dl>
           <ol class="history-tracks">
