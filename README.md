@@ -1,6 +1,7 @@
 # RND Synth MIDI Control
 
-<img width="1293" height="1235" alt="image" src="https://github.com/user-attachments/assets/ab83941d-4864-44e2-9554-90fe4f95e77c" />
+<img width="685" height="1169" alt="image" src="https://github.com/user-attachments/assets/881354fd-2ed1-47c3-a372-5c54b69084f3" />
+
 
 Browser-based MIDI control and patch inspection for the [Cyma Forma RND Synth](https://www.cymaforma.com/rnd-synth).
 
