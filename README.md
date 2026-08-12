@@ -5,6 +5,8 @@
 
 Browser-based MIDI control and patch inspection for the [Cyma Forma RND Synth](https://www.cymaforma.com/rnd-synth).
 
+Published app: [rveitch.github.io/rnd-synth-midi-control](https://rveitch.github.io/rnd-synth-midi-control/)
+
 The app connects through Web MIDI, receives patch SysEx after a button press, and displays the decoded seed, tonic and scale, sequence behavior, active tracks, engine names, unknown values, and raw messages. Completed patches are stored locally in a deduplicated 100-entry history and can be recalled by seed.
 
 Patches can be named and copied into a separate durable library that is not affected by history eviction or clearing. History and library collections have separate, versioned JSON import/export formats so their data can support a dedicated library view in a future release.
@@ -19,6 +21,12 @@ npm run dev
 ```
 
 Use a desktop browser with Web MIDI support in a secure context, connect the USB device, then approve MIDI and SysEx access.
+
+## GitHub Pages
+
+Pushing to `main` runs the test, type-check, lint, and production-build steps before deploying `dist` to GitHub Pages. The Pages build uses `/rnd-synth-midi-control/` as its Vite base path; local development continues to use `/`.
+
+One-time repository setup: open **Settings → Pages**, then select **GitHub Actions** as the build and deployment source. After the workflow completes, the app is available at the published URL above.
 
 ## Validation
 
