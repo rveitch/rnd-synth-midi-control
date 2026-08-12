@@ -4,7 +4,7 @@ import PatchHistory from './components/PatchHistory.vue';
 import PatchLibrary from './components/PatchLibrary.vue';
 import type { LibraryPatch } from './composables/usePatchCollections';
 import { useMidi } from './composables/useMidi';
-import { getNoteName, getPlaybackMode, getScaleName } from './midi/rndProtocol';
+import { getNoteName, getPatchModeLabel, getScaleName } from './midi/rndProtocol';
 
 const midi = useMidi();
 const collectionMessage = ref('');
@@ -243,16 +243,16 @@ function dateStamp(): string {
               v-if="midi.latestPatch.value.global"
               class="globals"
             >
-              <article><span>Tonic</span><strong>{{ getNoteName(midi.latestPatch.value.global.tonicIndex) }}</strong><small>Raw {{ midi.latestPatch.value.global.tonicIndex }}</small></article>
+              <article><span>Root when captured</span><strong>{{ getNoteName(midi.latestPatch.value.global.rootWhenCaptured) }}</strong><small>Raw {{ midi.latestPatch.value.global.rootWhenCaptured }}</small></article>
               <article><span>Scale</span><strong>{{ getScaleName(midi.latestPatch.value.global.scaleIndex) }}</strong><small>Raw {{ midi.latestPatch.value.global.scaleIndex }}</small></article>
-              <article><span>Sequence behavior</span><strong>{{ getPlaybackMode(midi.latestPatch.value.global.valueA) }}</strong><small>Mode {{ midi.latestPatch.value.global.valueA }} · Unknown {{ midi.latestPatch.value.global.valueB }} · {{ midi.latestPatch.value.global.valueC }}</small></article>
+              <article><span>Patch mode</span><strong>{{ getPatchModeLabel(midi.latestPatch.value.global.patchMode) }}</strong><small>Mode {{ midi.latestPatch.value.global.patchMode }} · {{ midi.latestPatch.value.global.tempoBpm }} BPM</small></article>
             </div>
             <div class="tracks">
               <article
                 v-for="track in midi.latestPatch.value.tracks"
                 :key="track.index"
               >
-                <b>0{{ track.index + 1 }}</b><div><span>Track {{ track.index + 1 }}</span><h3>{{ track.engine }}</h3><small>Unknown {{ track.valueA }} · {{ track.valueB }}</small></div>
+                <b>0{{ track.index + 1 }}</b><div><span>Track {{ track.index + 1 }}</span><h3>{{ track.engine }}</h3><small>Role {{ track.role }} · Variant {{ track.roleVariant }}</small></div>
               </article>
               <article
                 v-for="index in inactiveTracks"

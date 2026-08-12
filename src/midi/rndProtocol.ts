@@ -8,20 +8,19 @@ export const SCALE_NAMES = [
 export const NOTE_NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'] as const;
 
 export interface RndGlobalMetadata {
+  patchMode: number;
   raw: [number, number, number, number, number];
+  rootWhenCaptured: number;
   scaleIndex: number;
-  tonicIndex: number;
-  valueA: number;
-  valueB: number;
-  valueC: number;
+  tempoBpm: number;
 }
 
 export interface RndTrackMetadata {
   engine: string;
   index: number;
   raw: number[];
-  valueA: number;
-  valueB: number;
+  role: number;
+  roleVariant: number;
 }
 
 export interface RndPatch {
@@ -90,12 +89,15 @@ export function parseRndSysEx(data: ArrayLike<number>): RndProtocolMessage {
     if (payload.length !== 5) {
       return { kind: 'invalid', reason: 'Global message must contain five bytes.', raw };
     }
-    const [valueA, valueB, valueC, tonicIndex, scaleIndex] = payload as [number, number, number, number, number];
+    const [patchMode, tempoLow, tempoHigh, rootWhenCaptured, scaleIndex] = payload as [number, number, number, number, number];
     return {
       kind: 'global', raw,
       metadata: {
-        raw: [valueA, valueB, valueC, tonicIndex, scaleIndex],
-        scaleIndex, tonicIndex, valueA, valueB, valueC,
+        patchMode,
+        raw: [patchMode, tempoLow, tempoHigh, rootWhenCaptured, scaleIndex],
+        rootWhenCaptured,
+        scaleIndex,
+        tempoBpm: decodeSevenBitLittleEndian([tempoLow, tempoHigh]),
       },
     };
   }
@@ -103,10 +105,10 @@ export function parseRndSysEx(data: ArrayLike<number>): RndProtocolMessage {
     if (payload.length < 4) {
       return { kind: 'invalid', reason: 'Track message payload is incomplete.', raw };
     }
-    const [index, valueA, valueB] = payload as [number, number, number];
+    const [index, role, roleVariant] = payload as [number, number, number];
     return {
       kind: 'track', raw,
-      metadata: { engine: decodeAscii(payload.slice(3)), index, raw: [...payload], valueA, valueB },
+      metadata: { engine: decodeAscii(payload.slice(3)), index, raw: [...payload], role, roleVariant },
     };
   }
   return { kind: 'unknown', messageType: messageType ?? -1, payload, raw };
@@ -124,7 +126,7 @@ export function getNoteName(index: number): string {
   return NOTE_NAMES[index] ?? `Unknown (${index})`;
 }
 
-export function getPlaybackMode(value: number): string {
+export function getPatchModeLabel(value: number): string {
   if (value === 0) return 'Running sequence · Mode 0';
   if (value === 1) return 'Running sequence · Mode 1';
   if (value === 2) return 'Preview only';

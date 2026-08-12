@@ -82,4 +82,40 @@ describe('patch collections', () => {
     expect(destination.importLibrary(libraryExport)).toBe(1);
     expect(destination.patchLibrary.value[0]?.name).toBe('Seventy three');
   });
+
+  it('normalizes legacy generic metadata fields on import', () => {
+    const legacyPatch = {
+      capturedAt: new Date(0).toISOString(),
+      global: {
+        raw: [2, 60, 1, 6, 13],
+        scaleIndex: 13,
+        tonicIndex: 6,
+        valueA: 2,
+        valueB: 60,
+        valueC: 1,
+      },
+      rawMessages: [],
+      seed: 3_607_040_585,
+      tracks: [{
+        engine: 'Subtractive',
+        index: 0,
+        raw: [0, 1, 2, ...Array.from('Subtractive', (character) => character.charCodeAt(0)), 0],
+        valueA: 1,
+        valueB: 2,
+      }],
+    };
+    const exported = JSON.stringify({
+      exportedAt: new Date(0).toISOString(),
+      format: 'rnd-synth-patch-history',
+      patches: [legacyPatch],
+      version: 1,
+    });
+
+    const collections = usePatchCollections();
+    expect(collections.importHistory(exported)).toBe(1);
+    expect(collections.patchHistory.value[0]).toMatchObject({
+      global: { patchMode: 2, rootWhenCaptured: 6, scaleIndex: 13, tempoBpm: 188 },
+      tracks: [{ role: 1, roleVariant: 2 }],
+    });
+  });
 });

@@ -24,7 +24,7 @@ except ModuleNotFoundError:
 
 CONTRASTS = [
     {"field": "global.mode", "a": 4_007_357_591, "b": 477},
-    {"field": "global.valueB", "a": 3_985_775_430, "b": 416},
+    {"field": "global.tempoBpm", "a": 3_985_775_430, "b": 416},
     {"field": "scale", "a": 27_925_156, "b": 281},
     {"field": "scale", "a": 3_607_040_597, "b": 1_810_040_317},
     {"field": "scale", "a": 3_746_425_102, "b": 32_771},

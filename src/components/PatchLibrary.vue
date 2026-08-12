@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import type { LibraryPatch } from '../composables/usePatchCollections';
-import { encodeSeedSysEx, formatHex, getNoteName, getPlaybackMode, getScaleName } from '../midi/rndProtocol';
+import { encodeSeedSysEx, formatHex, getNoteName, getPatchModeLabel, getScaleName } from '../midi/rndProtocol';
 
 defineProps<{
   canRecall: boolean;
@@ -141,9 +141,10 @@ function handleImport(event: Event): void {
                 </button>
               </dd>
             </div>
-            <div><dt>Tonic</dt><dd>{{ getNoteName(entry.patch.global.tonicIndex) }}</dd></div>
+            <div><dt>Root captured</dt><dd>{{ getNoteName(entry.patch.global.rootWhenCaptured) }}</dd></div>
             <div><dt>Scale</dt><dd>{{ getScaleName(entry.patch.global.scaleIndex) }}</dd></div>
-            <div><dt>Sequence behavior</dt><dd>{{ getPlaybackMode(entry.patch.global.valueA) }}</dd></div>
+            <div><dt>Tempo</dt><dd>{{ entry.patch.global.tempoBpm }} BPM</dd></div>
+            <div><dt>Patch mode</dt><dd>{{ getPatchModeLabel(entry.patch.global.patchMode) }}</dd></div>
             <div><dt>Raw globals</dt><dd>{{ formatHex(entry.patch.global.raw) }}</dd></div>
           </dl>
           <ol class="history-tracks">
@@ -151,7 +152,7 @@ function handleImport(event: Event): void {
               v-for="track in entry.patch.tracks"
               :key="track.index"
             >
-              <span>Track {{ track.index + 1 }}</span><strong>{{ track.engine }}</strong><small>{{ track.valueA }} · {{ track.valueB }}</small>
+              <span>Track {{ track.index + 1 }}</span><strong>{{ track.engine }}</strong><small>Role {{ track.role }} · Variant {{ track.roleVariant }}</small>
             </li>
           </ol>
           <div class="patch-actions">

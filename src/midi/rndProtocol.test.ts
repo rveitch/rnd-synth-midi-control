@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeSevenBitLittleEndian, encodeSeedSysEx, getPlaybackMode, parseRndSysEx } from './rndProtocol';
+import { decodeSevenBitLittleEndian, encodeSeedSysEx, getPatchModeLabel, parseRndSysEx } from './rndProtocol';
 
 describe('RND Synth SysEx protocol', () => {
   it('decodes the five-byte little-endian seed', () => {
@@ -21,11 +21,17 @@ describe('RND Synth SysEx protocol', () => {
       .toMatchObject({ kind: 'seed', seed: 3_691_871_364 });
   });
 
-  it('keeps unknown global fields alongside tonic and scale', () => {
+  it('decodes patch mode, tempo, captured root, and scale', () => {
     expect(parseRndSysEx([0xf0, 0x6f, 0x62, 0x78, 0x21, 0x00, 0x56, 0x00, 0x01, 0x05, 0xf7]))
       .toMatchObject({
         kind: 'global',
-        metadata: { raw: [0, 86, 0, 1, 5], scaleIndex: 5, tonicIndex: 1, valueA: 0, valueB: 86, valueC: 0 },
+        metadata: {
+          patchMode: 0,
+          raw: [0, 86, 0, 1, 5],
+          rootWhenCaptured: 1,
+          scaleIndex: 5,
+          tempoBpm: 86,
+        },
       });
   });
 
@@ -33,7 +39,10 @@ describe('RND Synth SysEx protocol', () => {
     expect(parseRndSysEx([
       0xf0, 0x6f, 0x62, 0x78, 0x22, 0, 1, 2, 0x50, 0x6c, 0x75, 0x63, 0x6b, 0x65, 0x64,
       0x20, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0, 0xf7,
-    ])).toMatchObject({ kind: 'track', metadata: { engine: 'Plucked String', index: 0, valueA: 1, valueB: 2 } });
+    ])).toMatchObject({
+      kind: 'track',
+      metadata: { engine: 'Plucked String', index: 0, role: 1, roleVariant: 2 },
+    });
   });
 
   it('preserves unknown message types', () => {
@@ -46,9 +55,9 @@ describe('RND Synth SysEx protocol', () => {
   });
 
   it('labels the observed sequence behaviors while preserving unknown values', () => {
-    expect(getPlaybackMode(0)).toBe('Running sequence · Mode 0');
-    expect(getPlaybackMode(1)).toBe('Running sequence · Mode 1');
-    expect(getPlaybackMode(2)).toBe('Preview only');
-    expect(getPlaybackMode(3)).toBe('Unknown mode (3)');
+    expect(getPatchModeLabel(0)).toBe('Running sequence · Mode 0');
+    expect(getPatchModeLabel(1)).toBe('Running sequence · Mode 1');
+    expect(getPatchModeLabel(2)).toBe('Preview only');
+    expect(getPatchModeLabel(3)).toBe('Unknown mode (3)');
   });
 });

@@ -53,10 +53,9 @@ def parseRndMessage(message: list[int]) -> dict[str, Any] | None:
     if messageType == 0x21 and len(payload) == 5:
         return {
             "kind": "global",
-            "valueA": payload[0],
-            "valueB": payload[1],
-            "valueC": payload[2],
-            "tonicIndex": payload[3],
+            "patchMode": payload[0],
+            "tempoBpm": payload[1] | (payload[2] << 7),
+            "rootWhenCaptured": payload[3],
             "scaleIndex": payload[4],
             "raw": payload,
         }
@@ -64,8 +63,8 @@ def parseRndMessage(message: list[int]) -> dict[str, Any] | None:
         return {
             "kind": "track",
             "index": payload[0],
-            "valueA": payload[1],
-            "valueB": payload[2],
+            "role": payload[1],
+            "roleVariant": payload[2],
             "engine": decodeAscii(payload[3:]),
             "raw": payload,
         }

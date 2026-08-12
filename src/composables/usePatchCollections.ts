@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import type { RndPatch } from '../midi/rndProtocol';
+import { decodeSevenBitLittleEndian, type RndGlobalMetadata, type RndPatch, type RndTrackMetadata } from '../midi/rndProtocol';
 
 const HISTORY_STORAGE_KEY = 'rnd-synth-midi-control.patch-history.v1';
 const LIBRARY_STORAGE_KEY = 'rnd-synth-midi-control.patch-library.v1';
@@ -25,26 +25,79 @@ interface LibraryExport {
   version: 1;
 }
 
-function isStoredPatch(value: unknown): value is RndPatch {
-  if (typeof value !== 'object' || value === null) return false;
-  const candidate = value as Partial<RndPatch>;
-  return (
-    typeof candidate.capturedAt === 'string' &&
-    Number.isSafeInteger(candidate.seed) &&
-    Array.isArray(candidate.rawMessages) &&
-    Array.isArray(candidate.tracks)
-  );
+function normalizeGlobalMetadata(value: unknown): RndGlobalMetadata | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const candidate = value as Partial<RndGlobalMetadata> & {
+    tonicIndex?: unknown;
+    valueA?: unknown;
+  };
+  if (!Array.isArray(candidate.raw) || candidate.raw.length !== 5) return null;
+  const raw = candidate.raw.map(Number) as RndGlobalMetadata['raw'];
+  if (raw.some((byte) => !Number.isInteger(byte))) return null;
+  const patchMode = typeof candidate.patchMode === 'number' ? candidate.patchMode : Number(candidate.valueA ?? raw[0]);
+  const rootWhenCaptured = typeof candidate.rootWhenCaptured === 'number'
+    ? candidate.rootWhenCaptured
+    : Number(candidate.tonicIndex ?? raw[3]);
+  const scaleIndex = typeof candidate.scaleIndex === 'number' ? candidate.scaleIndex : raw[4];
+  const tempoBpm = typeof candidate.tempoBpm === 'number'
+    ? candidate.tempoBpm
+    : decodeSevenBitLittleEndian(raw.slice(1, 3));
+  if (![patchMode, rootWhenCaptured, scaleIndex, tempoBpm].every(Number.isInteger)) return null;
+  return { patchMode, raw, rootWhenCaptured, scaleIndex, tempoBpm };
 }
 
-function isLibraryPatch(value: unknown): value is LibraryPatch {
-  if (typeof value !== 'object' || value === null) return false;
+function normalizeTrackMetadata(value: unknown): RndTrackMetadata | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const candidate = value as Partial<RndTrackMetadata> & { valueA?: unknown; valueB?: unknown };
+  if (typeof candidate.engine !== 'string' || !Number.isInteger(candidate.index) || !Array.isArray(candidate.raw)) {
+    return null;
+  }
+  const role = typeof candidate.role === 'number' ? candidate.role : Number(candidate.valueA ?? candidate.raw[1]);
+  const roleVariant = typeof candidate.roleVariant === 'number'
+    ? candidate.roleVariant
+    : Number(candidate.valueB ?? candidate.raw[2]);
+  if (!Number.isInteger(role) || !Number.isInteger(roleVariant)) return null;
+  return {
+    engine: candidate.engine,
+    index: candidate.index as number,
+    raw: candidate.raw.map(Number),
+    role,
+    roleVariant,
+  };
+}
+
+function normalizeStoredPatch(value: unknown): RndPatch | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const candidate = value as Partial<RndPatch>;
+  if (
+    typeof candidate.capturedAt !== 'string' ||
+    !Number.isSafeInteger(candidate.seed) ||
+    !Array.isArray(candidate.rawMessages) ||
+    !Array.isArray(candidate.tracks)
+  ) return null;
+  const tracks = candidate.tracks.map(normalizeTrackMetadata);
+  if (tracks.some((track) => track === null)) return null;
+  const global = candidate.global === null ? null : normalizeGlobalMetadata(candidate.global);
+  if (candidate.global !== null && global === null) return null;
+  return {
+    capturedAt: candidate.capturedAt,
+    global,
+    rawMessages: candidate.rawMessages.map((message) => [...message]),
+    seed: candidate.seed as number,
+    tracks: tracks as RndTrackMetadata[],
+  };
+}
+
+function normalizeLibraryPatch(value: unknown): LibraryPatch | null {
+  if (typeof value !== 'object' || value === null) return null;
   const candidate = value as Partial<LibraryPatch>;
-  return (
-    typeof candidate.addedAt === 'string' &&
-    typeof candidate.name === 'string' &&
-    candidate.name.trim() !== '' &&
-    isStoredPatch(candidate.patch)
-  );
+  if (
+    typeof candidate.addedAt !== 'string' ||
+    typeof candidate.name !== 'string' ||
+    candidate.name.trim() === ''
+  ) return null;
+  const patch = normalizeStoredPatch(candidate.patch);
+  return patch === null ? null : { addedAt: candidate.addedAt, name: candidate.name, patch };
 }
 
 function parseJson(serialized: string): unknown {
@@ -55,12 +108,14 @@ function parseJson(serialized: string): unknown {
   }
 }
 
-function loadStoredArray<T>(key: string, predicate: (value: unknown) => value is T): T[] {
+function loadStoredArray<T>(key: string, normalize: (value: unknown) => T | null): T[] {
   try {
     const serialized = localStorage.getItem(key);
     if (serialized === null) return [];
     const parsed: unknown = JSON.parse(serialized);
-    return Array.isArray(parsed) ? parsed.filter(predicate) : [];
+    return Array.isArray(parsed)
+      ? parsed.map(normalize).filter((value): value is T => value !== null)
+      : [];
   } catch {
     return [];
   }
@@ -86,9 +141,9 @@ function uniqueLibraryEntries(entries: LibraryPatch[]): LibraryPatch[] {
 
 export function usePatchCollections() {
   const patchHistory = ref<RndPatch[]>(
-    loadStoredArray(HISTORY_STORAGE_KEY, isStoredPatch).slice(0, MAX_HISTORY_LENGTH),
+    loadStoredArray(HISTORY_STORAGE_KEY, normalizeStoredPatch).slice(0, MAX_HISTORY_LENGTH),
   );
-  const patchLibrary = ref<LibraryPatch[]>(loadStoredArray(LIBRARY_STORAGE_KEY, isLibraryPatch));
+  const patchLibrary = ref<LibraryPatch[]>(loadStoredArray(LIBRARY_STORAGE_KEY, normalizeLibraryPatch));
 
   function savePatch(patch: RndPatch): void {
     patchHistory.value = uniquePatches([patch, ...patchHistory.value]).slice(0, MAX_HISTORY_LENGTH);
@@ -166,9 +221,10 @@ export function usePatchCollections() {
     if (candidate.format !== 'rnd-synth-patch-history' || candidate.version !== 1 || !Array.isArray(candidate.patches)) {
       throw new Error('This is not a supported patch history export.');
     }
-    const imported = candidate.patches.filter(isStoredPatch);
-    if (imported.length !== candidate.patches.length) throw new Error('The history export contains invalid patches.');
-    patchHistory.value = uniquePatches([...imported, ...patchHistory.value]).slice(0, MAX_HISTORY_LENGTH);
+    const imported = candidate.patches.map(normalizeStoredPatch);
+    if (imported.some((patch) => patch === null)) throw new Error('The history export contains invalid patches.');
+    const normalized = imported as RndPatch[];
+    patchHistory.value = uniquePatches([...normalized, ...patchHistory.value]).slice(0, MAX_HISTORY_LENGTH);
     persistHistory();
     return imported.length;
   }
@@ -180,9 +236,9 @@ export function usePatchCollections() {
     if (candidate.format !== 'rnd-synth-patch-library' || candidate.version !== 1 || !Array.isArray(candidate.entries)) {
       throw new Error('This is not a supported patch library export.');
     }
-    const imported = candidate.entries.filter(isLibraryPatch);
-    if (imported.length !== candidate.entries.length) throw new Error('The library export contains invalid entries.');
-    patchLibrary.value = uniqueLibraryEntries([...imported, ...patchLibrary.value]);
+    const imported = candidate.entries.map(normalizeLibraryPatch);
+    if (imported.some((entry) => entry === null)) throw new Error('The library export contains invalid entries.');
+    patchLibrary.value = uniqueLibraryEntries([...(imported as LibraryPatch[]), ...patchLibrary.value]);
     persistLibrary();
     return imported.length;
   }

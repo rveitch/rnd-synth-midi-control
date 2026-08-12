@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { formatHex, getNoteName, getPlaybackMode, getScaleName, type RndPatch } from '../midi/rndProtocol';
+import { formatHex, getNoteName, getPatchModeLabel, getScaleName, type RndPatch } from '../midi/rndProtocol';
 
 defineProps<{
   canRecall: boolean;
@@ -101,9 +101,10 @@ function handleImport(event: Event): void {
 
         <div class="history-details">
           <dl v-if="patch.global">
-            <div><dt>Tonic</dt><dd>{{ getNoteName(patch.global.tonicIndex) }}</dd></div>
+            <div><dt>Root captured</dt><dd>{{ getNoteName(patch.global.rootWhenCaptured) }}</dd></div>
             <div><dt>Scale</dt><dd>{{ getScaleName(patch.global.scaleIndex) }}</dd></div>
-            <div><dt>Sequence behavior</dt><dd>{{ getPlaybackMode(patch.global.valueA) }}</dd></div>
+            <div><dt>Tempo</dt><dd>{{ patch.global.tempoBpm }} BPM</dd></div>
+            <div><dt>Patch mode</dt><dd>{{ getPatchModeLabel(patch.global.patchMode) }}</dd></div>
             <div><dt>Raw globals</dt><dd>{{ formatHex(patch.global.raw) }}</dd></div>
           </dl>
           <ol class="history-tracks">
@@ -111,7 +112,7 @@ function handleImport(event: Event): void {
               v-for="track in patch.tracks"
               :key="track.index"
             >
-              <span>Track {{ track.index + 1 }}</span><strong>{{ track.engine }}</strong><small>{{ track.valueA }} · {{ track.valueB }}</small>
+              <span>Track {{ track.index + 1 }}</span><strong>{{ track.engine }}</strong><small>Role {{ track.role }} · Variant {{ track.roleVariant }}</small>
             </li>
           </ol>
 

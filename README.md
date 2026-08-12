@@ -7,7 +7,7 @@ Browser-based MIDI control and patch inspection for the [Cyma Forma RND Synth](h
 
 Published app: [rveitch.github.io/rnd-synth-midi-control](https://rveitch.github.io/rnd-synth-midi-control/)
 
-The app connects through Web MIDI, receives patch SysEx after a button press, and displays the decoded seed, tonic and scale, sequence behavior, active tracks, engine names, unknown values, and raw messages. Completed patches are stored locally in a deduplicated 100-entry history and can be recalled by seed.
+The app connects through Web MIDI, receives patch SysEx after a button press, and displays the decoded seed, patch mode, tempo, root when captured, scale, active tracks, track roles and variants, engine names, and raw messages. Completed patches are stored locally in a deduplicated 100-entry history and can be recalled by seed.
 
 Patches can be named and copied into a separate durable library that is not affected by history eviction or clearing. History and library collections have separate, versioned JSON import/export formats so their data can support a dedicated library view in a future release.
 
@@ -45,14 +45,18 @@ F0 6F 62 78 <message type> <payload> F7
 
 - `10`: five-byte, seven-bit-safe little-endian random seed
 - `20`: patch-start marker
-- `21`: five bytes of global metadata
-- `22`: active-track index, two unknown values, and a null-terminated engine name
+- `21`: patch mode, 14-bit tempo, root when captured, and scale index
+- `22`: active-track index, role, role variant, and a null-terminated engine name
 
 Seed recall sends only the `10` message. Global and track metadata are never replayed.
 
-Controlled MIDI captures support decoding the last two global bytes as tonic and scale index: observed pitches across three exact metadata contrasts fit their announced tonic and named scale.
+The global tempo is a 14-bit integer assembled from bytes 1 and 2. Byte 3 is labeled **root when captured**, because independent long-running captures indicate that it can move during playback; immediately generated patches have matched the deterministic seed model's initial tonic. Byte 4 is the scale index.
 
-The first global byte is decoded as sequence behavior: modes `0` and `1` both produce running sequences, while labeled mode `2` patches play only the initial preview. The specific musical distinction between running modes `0` and `1` remains unknown.
+The first global byte is the patch mode: modes `0` and `1` both produce running sequences, while mode `2` patches play only the initial preview. The specific musical distinction between running modes `0` and `1` remains unknown.
+
+Seed Lab's readable browser implementation models patch generation with an MT19937 pseudorandom number generator initialized from the unsigned 32-bit seed. A fixed draw order produces patch mode, tempo, track count, roles and variants, initial tonic and scale, sequences, and engine choices. Cross-checks against four of this project's saved captures exactly matched the announced role/variant pairs. This supports future offline seed searching, but named engine controls such as polyphony, panning, and envelopes remain undecoded.
+
+See [the protocol notes](docs/protocol.md) for frame layouts, field names, engine eligibility, evidence, and current confidence boundaries.
 
 The **Generate patch** control creates a uniformly random unsigned 32-bit seed with the browser's secure random generator and sends the confirmed seed-recall message. The synth's response follows the normal inspection, history, and library workflow.
 

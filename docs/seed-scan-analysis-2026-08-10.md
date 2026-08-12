@@ -2,6 +2,12 @@
 
 Date: 2026-08-10
 
+> Historical note: this report records the conclusions available immediately
+> after the scan. Later comparison with Seed Lab's MT19937 model decoded
+> `valueA/valueB` as `role/roleVariant`, the first global byte as `patchMode`,
+> and the next two global bytes as a 14-bit `tempoBpm`. See
+> [protocol.md](protocol.md) for the current field names and evidence.
+
 ## Method
 
 The scanner sent 500 sequential seeds (`0` through `499`) followed by 500 unique, uniformly random unsigned 32-bit seeds. Requests were spaced 500 ms apart. A result was accepted only after the synth echoed the requested seed and returned its global and track metadata.

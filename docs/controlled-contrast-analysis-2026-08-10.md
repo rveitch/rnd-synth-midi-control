@@ -1,5 +1,10 @@
 # Controlled contrast analysis
 
+> Historical note: subsequent comparison with Seed Lab's MT19937 model decoded
+> the global fields as patch mode, 14-bit tempo, root when captured, and scale,
+> and the track pair as role and role variant. See
+> [protocol.md](protocol.md) for the current interpretation.
+
 Date: 2026-08-10
 
 ## Method

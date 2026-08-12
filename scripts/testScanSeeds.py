@@ -23,8 +23,12 @@ class SeedProtocolTests(unittest.TestCase):
         ])
         record = capture.toRecord(timedOut=False)
         self.assertEqual(record["status"], "complete")
-        self.assertEqual(record["global"]["valueA"], 2)
+        self.assertEqual(record["global"]["patchMode"], 2)
+        self.assertEqual(record["global"]["tempoBpm"], 133)
+        self.assertEqual(record["global"]["rootWhenCaptured"], 3)
         self.assertEqual(record["tracks"][0]["engine"], "SuperSaw")
+        self.assertEqual(record["tracks"][0]["role"], 0)
+        self.assertEqual(record["tracks"][0]["roleVariant"], 0)
 
     def testUnrelatedSysexIsIgnored(self) -> None:
         self.assertIsNone(parseRndMessage([0xF0, 0x7D, 1, 0xF7]))
