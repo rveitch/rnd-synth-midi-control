@@ -5,6 +5,7 @@ import { formatHex, getNoteName, getPlaybackMode, getScaleName, type RndPatch } 
 defineProps<{
   canRecall: boolean;
   librarySeeds: number[];
+  open: boolean;
   patches: RndPatch[];
   recallingSeed: number | null;
 }>();
@@ -16,6 +17,7 @@ const emit = defineEmits<{
   import: [file: File];
   recall: [patch: RndPatch];
   remove: [patch: RndPatch];
+  toggle: [open: boolean];
 }>();
 
 const draftNames = reactive<Record<string, string>>({});
@@ -43,16 +45,23 @@ function handleImport(event: Event): void {
 </script>
 
 <template>
-  <section class="panel history-panel">
-    <div class="heading history-heading">
+  <details
+    class="panel history-panel collection-disclosure"
+    :open="open"
+    @toggle="$emit('toggle', ($event.currentTarget as HTMLDetailsElement).open)"
+  >
+    <summary class="heading history-heading disclosure-heading">
       <div>
         <p class="eyebrow">
           Rolling capture
         </p>
         <h2>Patch history</h2>
       </div>
-      <span class="history-count">{{ patches.length }} / 100</span>
-    </div>
+      <span class="disclosure-meta"><span class="history-count">{{ patches.length }} / 100</span><span
+        class="disclosure-icon"
+        aria-hidden="true"
+      >⌄</span></span>
+    </summary>
 
     <div class="collection-actions">
       <button
@@ -157,5 +166,5 @@ function handleImport(event: Event): void {
     >
       Clear history
     </button>
-  </section>
+  </details>
 </template>

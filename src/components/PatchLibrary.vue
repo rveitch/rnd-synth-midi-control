@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import type { LibraryPatch } from '../composables/usePatchCollections';
-import { formatHex, getNoteName, getPlaybackMode, getScaleName } from '../midi/rndProtocol';
+import { encodeSeedSysEx, formatHex, getNoteName, getPlaybackMode, getScaleName } from '../midi/rndProtocol';
 
 defineProps<{
   canRecall: boolean;
   entries: LibraryPatch[];
+  open: boolean;
   recallingSeed: number | null;
 }>();
 
@@ -14,7 +16,32 @@ const emit = defineEmits<{
   recall: [entry: LibraryPatch];
   remove: [entry: LibraryPatch];
   rename: [entry: LibraryPatch, name: string];
+  toggle: [open: boolean];
 }>();
+
+const copiedSeed = ref<number | null>(null);
+const copyErrorSeed = ref<number | null>(null);
+let copyResetTimeout: number | undefined;
+
+function getSeedSysEx(seed: number): string {
+  return formatHex(encodeSeedSysEx(seed));
+}
+
+async function copySeedSysEx(seed: number): Promise<void> {
+  window.clearTimeout(copyResetTimeout);
+  copiedSeed.value = null;
+  copyErrorSeed.value = null;
+  try {
+    await navigator.clipboard.writeText(getSeedSysEx(seed));
+    copiedSeed.value = seed;
+  } catch {
+    copyErrorSeed.value = seed;
+  }
+  copyResetTimeout = window.setTimeout(() => {
+    copiedSeed.value = null;
+    copyErrorSeed.value = null;
+  }, 2_000);
+}
 
 function formatAddedAt(value: string): string {
   const date = new Date(value);
@@ -35,16 +62,23 @@ function handleImport(event: Event): void {
 </script>
 
 <template>
-  <section class="panel history-panel library-panel">
-    <div class="heading history-heading">
+  <details
+    class="panel history-panel library-panel collection-disclosure"
+    :open="open"
+    @toggle="$emit('toggle', ($event.currentTarget as HTMLDetailsElement).open)"
+  >
+    <summary class="heading history-heading disclosure-heading">
       <div>
         <p class="eyebrow">
           Durable collection
         </p>
         <h2>Patch library</h2>
       </div>
-      <span class="history-count">{{ entries.length }} saved</span>
-    </div>
+      <span class="disclosure-meta"><span class="history-count">{{ entries.length }} saved</span><span
+        class="disclosure-icon"
+        aria-hidden="true"
+      >⌄</span></span>
+    </summary>
 
     <div class="collection-actions">
       <button
@@ -93,6 +127,20 @@ function handleImport(event: Event): void {
           </label>
           <dl v-if="entry.patch.global">
             <div><dt>Seed</dt><dd>{{ entry.patch.seed.toLocaleString() }}</dd></div>
+            <div class="sysex-row">
+              <dt>SysEx</dt>
+              <dd>
+                <code>{{ getSeedSysEx(entry.patch.seed) }}</code>
+                <button
+                  class="copy-sysex"
+                  type="button"
+                  :aria-label="`Copy SysEx for ${entry.name}`"
+                  @click="copySeedSysEx(entry.patch.seed)"
+                >
+                  {{ copiedSeed === entry.patch.seed ? 'Copied' : copyErrorSeed === entry.patch.seed ? 'Copy failed' : 'Copy' }}
+                </button>
+              </dd>
+            </div>
             <div><dt>Tonic</dt><dd>{{ getNoteName(entry.patch.global.tonicIndex) }}</dd></div>
             <div><dt>Scale</dt><dd>{{ getScaleName(entry.patch.global.scaleIndex) }}</dd></div>
             <div><dt>Sequence behavior</dt><dd>{{ getPlaybackMode(entry.patch.global.valueA) }}</dd></div>
@@ -126,5 +174,5 @@ function handleImport(event: Event): void {
         </div>
       </details>
     </div>
-  </section>
+  </details>
 </template>

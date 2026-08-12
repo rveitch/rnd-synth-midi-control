@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import PatchHistory from './components/PatchHistory.vue';
 import PatchLibrary from './components/PatchLibrary.vue';
 import type { LibraryPatch } from './composables/usePatchCollections';
@@ -8,11 +8,22 @@ import { getNoteName, getPlaybackMode, getScaleName } from './midi/rndProtocol';
 
 const midi = useMidi();
 const collectionMessage = ref('');
+const connectionOpen = ref(!midi.connected.value);
+const historyOpen = ref(true);
+const libraryOpen = ref(true);
 const inactiveTracks = computed(() => {
   const active = new Set(midi.latestPatch.value?.tracks.map((track) => track.index) ?? []);
   return [0, 1, 2, 3].filter((index) => !active.has(index));
 });
 const librarySeeds = computed(() => midi.patchLibrary.value.map((entry) => entry.patch.seed));
+
+watch(midi.connected, (connected) => {
+  connectionOpen.value = !connected;
+});
+
+function syncConnectionDisclosure(event: Event): void {
+  connectionOpen.value = (event.currentTarget as HTMLDetailsElement).open;
+}
 
 function handleInput(event: Event): void { void midi.selectInput((event.target as HTMLSelectElement).value); }
 function handleOutput(event: Event): void { void midi.selectOutput((event.target as HTMLSelectElement).value); }
@@ -122,19 +133,29 @@ function dateStamp(): string {
       </section>
 
       <div class="workspace">
-        <div class="history-column">
-          <section class="panel connection">
-            <div class="heading">
-              <div>
-                <p class="eyebrow">
-                  Hardware
-                </p><h2>MIDI connection</h2>
-              </div>
+        <details
+          class="panel connection connection-disclosure"
+          :open="connectionOpen"
+          @toggle="syncConnectionDisclosure"
+        >
+          <summary class="heading disclosure-heading">
+            <div>
+              <p class="eyebrow">
+                Hardware
+              </p><h2>MIDI connection</h2>
+            </div>
+            <span class="disclosure-meta">
               <span
                 class="status"
                 :class="{ online: midi.connected.value }"
               >● {{ midi.connected.value ? 'Connected' : 'Disconnected' }}</span>
-            </div>
+              <span
+                class="disclosure-icon"
+                aria-hidden="true"
+              >⌄</span>
+            </span>
+          </summary>
+          <div class="connection-body">
             <p class="muted">
               MIDI and SysEx permission is required to read the patch metadata announced by the synth.
             </p>
@@ -180,40 +201,8 @@ function dateStamp(): string {
                 :value="port.id"
               >{{ port.name }} · {{ port.state }}</option></select></label>
             </div>
-          </section>
-
-          <p
-            v-if="collectionMessage"
-            class="collection-message"
-            role="status"
-          >
-            {{ collectionMessage }}
-          </p>
-
-          <PatchLibrary
-            :can-recall="midi.connected.value && midi.selectedOutputId.value !== ''"
-            :entries="midi.patchLibrary.value"
-            :recalling-seed="midi.recallingSeed.value"
-            @export="exportLibrary"
-            @import="importLibrary"
-            @recall="recallLibraryPatch"
-            @remove="removeLibraryPatch"
-            @rename="renameLibraryPatch"
-          />
-
-          <PatchHistory
-            :can-recall="midi.connected.value && midi.selectedOutputId.value !== ''"
-            :library-seeds="librarySeeds"
-            :patches="midi.patchHistory.value"
-            :recalling-seed="midi.recallingSeed.value"
-            @add-to-library="addToLibrary"
-            @clear="clearPatchHistory"
-            @export="exportHistory"
-            @import="importHistory"
-            @recall="midi.recallPatch"
-            @remove="removeHistoryPatch"
-          />
-        </div>
+          </div>
+        </details>
 
         <section class="panel inspector">
           <div class="heading">
@@ -275,6 +264,44 @@ function dateStamp(): string {
             </div>
           </template>
         </section>
+      </div>
+
+      <p
+        v-if="collectionMessage"
+        class="collection-message"
+        role="status"
+      >
+        {{ collectionMessage }}
+      </p>
+
+      <div class="collections-grid">
+        <PatchHistory
+          :can-recall="midi.connected.value && midi.selectedOutputId.value !== ''"
+          :library-seeds="librarySeeds"
+          :open="historyOpen"
+          :patches="midi.patchHistory.value"
+          :recalling-seed="midi.recallingSeed.value"
+          @add-to-library="addToLibrary"
+          @clear="clearPatchHistory"
+          @export="exportHistory"
+          @import="importHistory"
+          @recall="midi.recallPatch"
+          @remove="removeHistoryPatch"
+          @toggle="historyOpen = $event"
+        />
+
+        <PatchLibrary
+          :can-recall="midi.connected.value && midi.selectedOutputId.value !== ''"
+          :entries="midi.patchLibrary.value"
+          :open="libraryOpen"
+          :recalling-seed="midi.recallingSeed.value"
+          @export="exportLibrary"
+          @import="importLibrary"
+          @recall="recallLibraryPatch"
+          @remove="removeLibraryPatch"
+          @rename="renameLibraryPatch"
+          @toggle="libraryOpen = $event"
+        />
       </div>
 
       <details class="panel diagnostics">
