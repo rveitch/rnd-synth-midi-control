@@ -1,4 +1,4 @@
-import { onBeforeUnmount, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { MidiController, type MidiPortOption } from '../midi/midiController';
 import { formatHex, type RndPatch, type RndProtocolMessage } from '../midi/rndProtocol';
 import { usePatchCollections } from './usePatchCollections';
@@ -43,6 +43,7 @@ export function useMidi() {
   });
 
   async function connect(): Promise<void> {
+    if (connected.value || connecting.value) return;
     connecting.value = true; error.value = '';
     try { await controller.connect(); connected.value = true; refreshPorts(); }
     catch (cause) { error.value = cause instanceof Error ? cause.message : 'Unable to access MIDI devices.'; }
@@ -107,6 +108,7 @@ export function useMidi() {
     }
   }
 
+  onMounted(() => { void connect(); });
   onBeforeUnmount(() => { clearRecallState(); void controller.disconnect(); });
 
   return {
