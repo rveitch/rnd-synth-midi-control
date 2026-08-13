@@ -37,11 +37,8 @@ export class MidiController {
   async connect(): Promise<void> {
     if (typeof navigator.requestMIDIAccess !== 'function') throw new Error('This browser does not support Web MIDI.');
     this.access = await navigator.requestMIDIAccess({ sysex: true });
-    this.access.onstatechange = () => this.callbacks.onAccessChange();
-    const input = this.findPreferredPort(this.access.inputs);
-    const output = this.findPreferredPort(this.access.outputs);
-    if (input !== null) await this.selectInput(input.id);
-    if (output !== null) await this.selectOutput(output.id);
+    this.access.onstatechange = () => { void this.handleAccessChange(); };
+    await this.selectPreferredPorts();
     this.callbacks.onAccessChange();
   }
 
@@ -49,6 +46,9 @@ export class MidiController {
   getOutputs(): MidiPortOption[] { return this.access === null ? [] : this.toOptions(this.access.outputs); }
   getSelectedInputId(): string { return this.input?.id ?? ''; }
   getSelectedOutputId(): string { return this.output?.id ?? ''; }
+  isDeviceConnected(): boolean {
+    return this.input?.state === 'connected' && this.output?.state === 'connected';
+  }
 
   recallSeed(seed: number): void {
     if (this.output === null || this.output.state !== 'connected') {
@@ -114,8 +114,27 @@ export class MidiController {
     if (this.settleTimer !== null) { clearTimeout(this.settleTimer); this.settleTimer = null; }
   }
 
+  private async handleAccessChange(): Promise<void> {
+    await this.selectPreferredPorts();
+    this.callbacks.onAccessChange();
+  }
+
+  private async selectPreferredPorts(): Promise<void> {
+    if (this.access === null) return;
+    if (this.input?.state !== 'connected') {
+      const input = this.findPreferredPort(this.access.inputs);
+      await this.selectInput(input?.id ?? '');
+    }
+    if (this.output?.state !== 'connected') {
+      const output = this.findPreferredPort(this.access.outputs);
+      await this.selectOutput(output?.id ?? '');
+    }
+  }
+
   private findPreferredPort<T extends MIDIPort>(ports: ReadonlyMap<string, T>): T | null {
-    return Array.from(ports.values()).find((port) => port.name?.toLocaleLowerCase().includes(PREFERRED_DEVICE_NAME)) ?? null;
+    return Array.from(ports.values()).find((port) =>
+      port.state === 'connected' && port.name?.toLocaleLowerCase().includes(PREFERRED_DEVICE_NAME),
+    ) ?? null;
   }
 
   private toOptions<T extends MIDIPort>(ports: ReadonlyMap<string, T>): MidiPortOption[] {

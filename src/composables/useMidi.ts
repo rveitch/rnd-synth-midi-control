@@ -13,6 +13,7 @@ export interface DiagnosticEntry {
 export function useMidi() {
   const connected = ref(false);
   const connecting = ref(false);
+  const midiAccessGranted = ref(false);
   const diagnostics = ref<DiagnosticEntry[]>([]);
   const error = ref('');
   const inputs = ref<MidiPortOption[]>([]);
@@ -44,16 +45,16 @@ export function useMidi() {
   });
 
   async function connect(): Promise<void> {
-    if (connected.value || connecting.value) return;
+    if (midiAccessGranted.value || connecting.value) return;
     connecting.value = true; error.value = '';
-    try { await controller.connect(); connected.value = true; refreshPorts(); }
+    try { await controller.connect(); midiAccessGranted.value = true; refreshPorts(); }
     catch (cause) { error.value = cause instanceof Error ? cause.message : 'Unable to access MIDI devices.'; }
     finally { connecting.value = false; }
   }
 
   async function disconnect(): Promise<void> {
     clearRecallState();
-    await controller.disconnect(); connected.value = false; inputs.value = []; outputs.value = [];
+    await controller.disconnect(); connected.value = false; midiAccessGranted.value = false; inputs.value = []; outputs.value = [];
     selectedInputId.value = ''; selectedOutputId.value = '';
   }
 
@@ -112,6 +113,7 @@ export function useMidi() {
   function refreshPorts(): void {
     inputs.value = controller.getInputs(); outputs.value = controller.getOutputs();
     selectedInputId.value = controller.getSelectedInputId(); selectedOutputId.value = controller.getSelectedOutputId();
+    connected.value = controller.isDeviceConnected();
   }
 
   function clearDiagnostics(): void { diagnostics.value = []; }
@@ -131,6 +133,6 @@ export function useMidi() {
     ...collections,
     clearDiagnostics, connect, connected, connecting, diagnostics, disconnect, error, generatePatch, inputs,
     latestPatch, outputs, recallPatch, recallingSeed, selectedInputId, selectedOutputId, selectInput, selectOutput,
-    sequencerState, setSequencerStopped,
+    midiAccessGranted, sequencerState, setSequencerStopped,
   };
 }

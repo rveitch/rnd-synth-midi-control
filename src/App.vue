@@ -148,7 +148,7 @@ function dateStamp(): string {
               <span
                 class="status"
                 :class="{ online: midi.connected.value }"
-              >● {{ midi.connected.value ? 'Connected' : 'Disconnected' }}</span>
+              >● {{ midi.connected.value ? 'Connected' : midi.midiAccessGranted.value ? 'MIDI ready · RND unavailable' : 'Disconnected' }}</span>
               <span
                 class="disclosure-icon"
                 aria-hidden="true"
@@ -160,7 +160,7 @@ function dateStamp(): string {
               MIDI and SysEx permission is required to read the patch metadata announced by the synth.
             </p>
             <button
-              v-if="!midi.connected.value"
+              v-if="!midi.midiAccessGranted.value"
               class="primary"
               :disabled="midi.connecting.value"
               @click="midi.connect"
@@ -181,7 +181,7 @@ function dateStamp(): string {
               {{ midi.error.value }}
             </p>
             <div
-              v-if="midi.connected.value"
+              v-if="midi.midiAccessGranted.value"
               class="ports"
             >
               <label>MIDI input<select
