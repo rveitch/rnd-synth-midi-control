@@ -50,6 +50,14 @@ a brief audible mute. The web app sends it once after both MIDI ports have been
 opened so a patch that predates the browser session appears in the inspector.
 It is not used for periodic polling.
 
+The payload byte is also a confirmed sequencer control:
+
+- `01` stops the autonomous sequencer;
+- `00` starts it again, apparently from the beginning, and resends state.
+
+The UI therefore labels these actions **Stop** and **Start**, not Pause and
+Resume. This behavior was manually verified against the hardware.
+
 ### `0x21`: global metadata
 
 ```text

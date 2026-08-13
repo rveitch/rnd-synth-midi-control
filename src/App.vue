@@ -227,6 +227,34 @@ function dateStamp(): string {
               </button>
             </div>
           </div>
+          <section
+            class="sequencer-control"
+            aria-label="Sequencer control"
+          >
+            <div>
+              <span>Sequencer control</span>
+              <strong>{{ midi.sequencerState.value === 'stopped' ? 'Stopped' : midi.sequencerState.value === 'running' ? 'Running' : 'Ready' }}</strong>
+              <small>Start restarts the sequence from the beginning</small>
+            </div>
+            <div class="sequencer-actions">
+              <button
+                class="secondary"
+                type="button"
+                :disabled="midi.selectedOutputId.value === '' || midi.sequencerState.value === 'stopped'"
+                @click="midi.setSequencerStopped(true)"
+              >
+                Stop
+              </button>
+              <button
+                class="primary"
+                type="button"
+                :disabled="midi.selectedOutputId.value === '' || midi.sequencerState.value === 'running'"
+                @click="midi.setSequencerStopped(false)"
+              >
+                Start
+              </button>
+            </div>
+          </section>
           <div
             v-if="midi.latestPatch.value === null"
             class="empty"

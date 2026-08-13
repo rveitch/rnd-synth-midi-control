@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   decodeSevenBitLittleEndian,
   encodeSeedSysEx,
+  encodeSequencerControlSysEx,
   encodeStatusRequestSysEx,
   getPatchModeLabel,
   parseRndSysEx,
@@ -24,6 +25,11 @@ describe('RND Synth SysEx protocol', () => {
 
   it('encodes the confirmed current-state request', () => {
     expect(encodeStatusRequestSysEx()).toEqual([0xf0, 0x6f, 0x62, 0x78, 0x11, 0x00, 0xf7]);
+  });
+
+  it('encodes the confirmed sequencer stop and start commands', () => {
+    expect(encodeSequencerControlSysEx(true)).toEqual([0xf0, 0x6f, 0x62, 0x78, 0x11, 0x01, 0xf7]);
+    expect(encodeSequencerControlSysEx(false)).toEqual([0xf0, 0x6f, 0x62, 0x78, 0x11, 0x00, 0xf7]);
   });
 
   it('parses a captured seed message', () => {

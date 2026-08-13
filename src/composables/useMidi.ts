@@ -21,6 +21,7 @@ export function useMidi() {
   const recallingSeed = ref<number | null>(null);
   const selectedInputId = ref('');
   const selectedOutputId = ref('');
+  const sequencerState = ref<'running' | 'stopped' | 'unknown'>('unknown');
   let diagnosticId = 0;
   let recallResetTimer: ReturnType<typeof setTimeout> | null = null;
   const collections = usePatchCollections();
@@ -88,12 +89,23 @@ export function useMidi() {
     error.value = '';
     clearRecallState();
     try {
+      sequencerState.value = 'unknown';
       recallingSeed.value = seed;
       controller.recallSeed(seed);
       recallResetTimer = setTimeout(clearRecallState, 2_000);
     } catch (cause) {
       recallingSeed.value = null;
       error.value = cause instanceof Error ? cause.message : 'Unable to recall the selected patch.';
+    }
+  }
+
+  function setSequencerStopped(stopped: boolean): void {
+    error.value = '';
+    try {
+      controller.setSequencerStopped(stopped);
+      sequencerState.value = stopped ? 'stopped' : 'running';
+    } catch (cause) {
+      error.value = cause instanceof Error ? cause.message : 'Unable to control the sequencer.';
     }
   }
 
@@ -119,5 +131,6 @@ export function useMidi() {
     ...collections,
     clearDiagnostics, connect, connected, connecting, diagnostics, disconnect, error, generatePatch, inputs,
     latestPatch, outputs, recallPatch, recallingSeed, selectedInputId, selectedOutputId, selectInput, selectOutput,
+    sequencerState, setSequencerStopped,
   };
 }

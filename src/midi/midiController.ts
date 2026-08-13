@@ -1,6 +1,7 @@
 import { RndPatchAssembler } from './patchAssembler';
 import {
   encodeSeedSysEx,
+  encodeSequencerControlSysEx,
   encodeStatusRequestSysEx,
   parseRndSysEx,
   type RndPatch,
@@ -75,6 +76,13 @@ export class MidiController {
   requestCurrentState(): void {
     if (this.output === null || this.output.state !== 'connected') return;
     this.output.send(encodeStatusRequestSysEx());
+  }
+
+  setSequencerStopped(stopped: boolean): void {
+    if (this.output === null || this.output.state !== 'connected') {
+      throw new Error('Select a connected MIDI output before controlling the sequencer.');
+    }
+    this.output.send(encodeSequencerControlSysEx(stopped));
   }
 
   async disconnect(): Promise<void> {

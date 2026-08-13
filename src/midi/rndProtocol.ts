@@ -64,7 +64,11 @@ export function encodeSeedSysEx(seed: number): number[] {
 }
 
 export function encodeStatusRequestSysEx(): number[] {
-  return [0xf0, 0x6f, 0x62, 0x78, 0x11, 0x00, 0xf7];
+  return encodeSequencerControlSysEx(false);
+}
+
+export function encodeSequencerControlSysEx(stopped: boolean): number[] {
+  return [0xf0, 0x6f, 0x62, 0x78, 0x11, stopped ? 0x01 : 0x00, 0xf7];
 }
 
 function decodeAscii(bytes: number[]): string {

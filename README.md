@@ -50,6 +50,8 @@ F0 6F 62 78 <message type> <payload> F7
 
 Seed recall sends only the `10` message. Global and track metadata are never replayed.
 
+The Patch Inspector also exposes the confirmed sequencer controls: `11 01` stops autonomous playback and `11 00` starts it again, apparently from the beginning. Start also causes the current state to be resent.
+
 The global tempo is a 14-bit integer assembled from bytes 1 and 2. Byte 3 is labeled **root when captured**, because independent long-running captures indicate that it can move during playback; immediately generated patches have matched the deterministic seed model's initial tonic. Byte 4 is the scale index.
 
 The first global byte is the patch mode: modes `0` and `1` both produce running sequences, while mode `2` patches play only the initial preview. The specific musical distinction between running modes `0` and `1` remains unknown.
