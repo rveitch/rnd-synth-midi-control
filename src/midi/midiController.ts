@@ -1,5 +1,11 @@
 import { RndPatchAssembler } from './patchAssembler';
-import { encodeSeedSysEx, parseRndSysEx, type RndPatch, type RndProtocolMessage } from './rndProtocol';
+import {
+  encodeSeedSysEx,
+  encodeStatusRequestSysEx,
+  parseRndSysEx,
+  type RndPatch,
+  type RndProtocolMessage,
+} from './rndProtocol';
 
 const PREFERRED_DEVICE_NAME = 'rnd synth';
 const PATCH_SETTLE_TIME_MS = 100;
@@ -60,7 +66,15 @@ export class MidiController {
   async selectOutput(id: string): Promise<void> {
     if (this.output !== null) await this.output.close();
     this.output = this.access?.outputs.get(id) ?? null;
-    if (this.output !== null) await this.output.open();
+    if (this.output !== null) {
+      await this.output.open();
+      if (this.input !== null) this.requestCurrentState();
+    }
+  }
+
+  requestCurrentState(): void {
+    if (this.output === null || this.output.state !== 'connected') return;
+    this.output.send(encodeStatusRequestSysEx());
   }
 
   async disconnect(): Promise<void> {

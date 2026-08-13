@@ -38,6 +38,18 @@ F0 6F 62 78 20 F7
 
 Observed immediately before the global and per-track metadata for a patch.
 
+### `0x11`: request current state
+
+```text
+F0 6F 62 78 11 00 F7
+```
+
+This command makes the device resend its current seed, global metadata, and
+active-track metadata. It also appears to clear a play-lock state and may cause
+a brief audible mute. The web app sends it once after both MIDI ports have been
+opened so a patch that predates the browser session appears in the inspector.
+It is not used for periodic polling.
+
 ### `0x21`: global metadata
 
 ```text

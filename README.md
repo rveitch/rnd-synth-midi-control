@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Use a desktop browser with Web MIDI support in a secure context and connect the USB device. The app attempts to restore MIDI and SysEx access automatically on startup. If permission has not been granted, the browser blocks the automatic attempt, or the device is unavailable, expand **MIDI connection** and use **Connect RND Synth** to retry manually.
+Use a desktop browser with Web MIDI support in a secure context and connect the USB device. The app attempts to restore MIDI and SysEx access automatically on startup. Once both RND ports are open, it sends one `11 00` current-state request so the inspector synchronizes with a patch that was already running before the page opened. This request may cause a brief audible mute; it is sent only on connection or port selection, never polled. If permission has not been granted, the browser blocks the automatic attempt, or the device is unavailable, expand **MIDI connection** and use **Connect RND Synth** to retry manually.
 
 ## GitHub Pages
 

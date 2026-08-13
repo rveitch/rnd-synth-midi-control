@@ -56,7 +56,11 @@ export function useMidi() {
     selectedInputId.value = ''; selectedOutputId.value = '';
   }
 
-  async function selectInput(id: string): Promise<void> { await controller.selectInput(id); refreshPorts(); }
+  async function selectInput(id: string): Promise<void> {
+    await controller.selectInput(id);
+    if (id !== '' && selectedOutputId.value !== '') controller.requestCurrentState();
+    refreshPorts();
+  }
   async function selectOutput(id: string): Promise<void> { await controller.selectOutput(id); refreshPorts(); }
 
   function recallPatch(patch: RndPatch): void {

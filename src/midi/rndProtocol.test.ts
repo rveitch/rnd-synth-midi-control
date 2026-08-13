@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { decodeSevenBitLittleEndian, encodeSeedSysEx, getPatchModeLabel, parseRndSysEx } from './rndProtocol';
+import {
+  decodeSevenBitLittleEndian,
+  encodeSeedSysEx,
+  encodeStatusRequestSysEx,
+  getPatchModeLabel,
+  parseRndSysEx,
+} from './rndProtocol';
 
 describe('RND Synth SysEx protocol', () => {
   it('decodes the five-byte little-endian seed', () => {
@@ -14,6 +20,10 @@ describe('RND Synth SysEx protocol', () => {
 
   it('rejects seeds outside the unsigned 32-bit range', () => {
     expect(() => encodeSeedSysEx(0x1_0000_0000)).toThrow(RangeError);
+  });
+
+  it('encodes the confirmed current-state request', () => {
+    expect(encodeStatusRequestSysEx()).toEqual([0xf0, 0x6f, 0x62, 0x78, 0x11, 0x00, 0xf7]);
   });
 
   it('parses a captured seed message', () => {

@@ -63,6 +63,10 @@ export function encodeSeedSysEx(seed: number): number[] {
   return [0xf0, 0x6f, 0x62, 0x78, 0x10, ...payload, 0xf7];
 }
 
+export function encodeStatusRequestSysEx(): number[] {
+  return [0xf0, 0x6f, 0x62, 0x78, 0x11, 0x00, 0xf7];
+}
+
 function decodeAscii(bytes: number[]): string {
   const terminatorIndex = bytes.indexOf(0);
   return String.fromCharCode(...(terminatorIndex >= 0 ? bytes.slice(0, terminatorIndex) : bytes));
